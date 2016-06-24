@@ -53,7 +53,9 @@
                       colormax: "#FF0000",
                       vmin: 2,
                       vmax: 5,
-                      key: "freesurfer thickness"
+                      key: "freesurfer thickness",
+                      key_options: ["freesurfer thickness", "freesurfer curvature", "area", "freesurfer convexity (sulc)", "geodesic depth", "mean curvature", "travel depth"],    
+                      threshold: 2.4
                   }
                   
                 };
@@ -64,17 +66,26 @@
                     var tmp = mesh.anisha_opts
                     var colormin = gui.addColor(tmp, 'colormin');
                     var colormax = gui.addColor(tmp, 'colormax');
-                    var vmin = gui.add(tmp, 'vmin', 0, 5);
-                    var vmax = gui.add(tmp, 'vmax', 0, 5);
+                    var vmin = gui.add(tmp, 'vmin');
+                    var vmax = gui.add(tmp, 'vmax');
+                    //var threshold = gui.add(tmp, 'threshold', 0, 5);
+                    var key = gui.add(tmp, "key", tmp.key_options)
                     
-                    colormin.onChange(function(value){
+                    var changer = function(value){
                         console.log("this is", this)
                         console.log("mesh is", mesh)
                         
                         mesh.anisha_opts = this.object   
                         console.log(mesh.anisha_opts)
                         color_brain(mesh)
-                    })
+                    }
+                    
+                    colormin.onChange(changer)
+                    colormax.onChange(changer)
+                    vmin.onChange(changer)
+                    vmax.onChange(changer)
+                    key.onChange(changer)
+                    //threshold.onChange(changer)
                     
                     gui.open();
 
@@ -107,8 +118,8 @@
                         console.log("coloring brain for", mesh)
                         //var mesh_options = options[mesh.name]
                         d3.csv(csv_filename, function(csv){
-                            
-                                                //console.log("csv is", csv)
+                                            
+                                                console.log("csv is", csv)
                                                 var face_metrics = [] 
                                                 var key = mesh_options.key
                                                 mesh.geometry.faces.forEach(function(element, index, array){
@@ -125,8 +136,11 @@
                                                 //console.log(face_metrics[0], colorgrad(face_metrics[0]))
                                         		
                                         		mesh.geometry.faces.forEach(function(element, index, array){
+                                            		//if (face_metrics[index]>mesh_options.threshold){
                                             		var col = new THREE.Color(colorgrad(face_metrics[index]))
-                                            		element.color.setRGB(col.r, col.g, col.b)
+                                            		element.color.setRGB(col.r, col.g, col.b)//}
+                                                //ak: how do we undo the color setting if we change the threshold??            
+                                            		
                                         		})
                                         		mesh.geometry.colorsNeedUpdate = true
                                             
