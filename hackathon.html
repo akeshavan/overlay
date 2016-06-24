@@ -21,6 +21,8 @@
          
          <body ng-app="visApp">
 
+            
+
              <script src="three.min.js"></script>
              <script src="VTKLoader.js"></script>
              <script src="TrackballControls.js"></script>
@@ -55,29 +57,55 @@
                   }
                   
                 };
+                
+                var initialize_gui = function(mesh){
+                    var gui = new dat.GUI();
+                    var meshgui = gui.addFolder(mesh.name);
+                    var tmp = mesh.anisha_opts
+                    var colormin = gui.addColor(tmp, 'colormin');
+                    var colormax = gui.addColor(tmp, 'colormax');
+                    var vmin = gui.add(tmp, 'vmin', 0, 5);
+                    var vmax = gui.add(tmp, 'vmax', 0, 5);
+                    
+                    colormin.onChange(function(value){
+                        console.log("this is", this)
+                        console.log("mesh is", mesh)
+                        
+                        mesh.anisha_opts = this.object   
+                        console.log(mesh.anisha_opts)
+                        color_brain(mesh)
+                    })
+                    
+                    gui.open();
+
+                    
+                
+                }
 				
 				var get_mesh_by_name = function(meshes, name){
-    				
+    				console.log("meshes", meshes)
     				var N = meshes.length
+    				
     				for (i=0;i<N;i++){
+        				
         				var to_match = MeshOpts[meshes[i].name].filename
         				console.log("finding mesh", meshes[i].name, to_match)
         				if (meshes[i].name==to_match){
+            				
             				return meshes[i]
         				}
     				}
     				
 				}
 				
-				var color_brain= function(mesh, options){
+				var color_brain= function(mesh){
+                    var mesh_options = mesh.anisha_opts
                     
-                    var meshkeys = Object.keys(options)
-                    console.log(meshkeys)
-                    if (meshkeys.indexOf(mesh.name) >= 0){
-                        csv_filename = options[mesh.name]["filename"]
-                        
+                    //if (meshkeys.indexOf(mesh.name) >= 0)
+                        csv_filename = mesh_options["filename"]
+                        console.log("csv filename", csv_filename)
                         console.log("coloring brain for", mesh)
-                        var mesh_options = options[mesh.name]
+                        //var mesh_options = options[mesh.name]
                         d3.csv(csv_filename, function(csv){
                             
                                                 //console.log("csv is", csv)
@@ -103,7 +131,7 @@
                                         		mesh.geometry.colorsNeedUpdate = true
                                             
                                         })
-                    }
+                    
                     
                 }
 				
@@ -112,7 +140,7 @@
      	        camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.01, 1e10 );
      	        camera.position.z = 120;
 
-     	        controls = new THREE.TrackballControls( camera );
+     	        controls = new THREE.TrackballControls( camera, container );
 
      	        controls.rotateSpeed = 5.0;
      	        controls.zoomSpeed = 5;
@@ -170,8 +198,10 @@
                  				        mesh.rotation.y = Math.PI * 1.1;
  		                                mesh.rotation.x = Math.PI * 0.5;
  		                                mesh.rotation.z = Math.PI * 1.5;
+ 		                                mesh.anisha_opts = MeshOpts[mesh.name]
 	
-                                        color_brain(mesh, MeshOpts)
+                                        color_brain(mesh)
+                                        initialize_gui(mesh)
                                         
                  						
                  						scene.add(mesh);
@@ -218,32 +248,13 @@
                  
                 console.log("finished init")
                  
-                gui = new dat.GUI();
                 
-                var meshkeys = Object.keys(MeshOpts)
-                for (i=0;i<meshkeys.length;i++){
-                    var meshgui = gui.addFolder(meshkeys[i]);
-                    var tmp = MeshOpts[meshkeys[i]]
-                    var colormin = gui.addColor(tmp, 'colormin');
-                    var colormax = gui.addColor(tmp, 'colormax');
-                    var vmin = gui.add(tmp, 'vmin', 0, 5);
-                    var vmax = gui.add(tmp, 'vmax', 0, 5);
-                    
-                    colormin.onChange(function(value){
-                        console.log("this is", this)
-                        console.log("mesh is", meshkeys, i)
-                        var mesh = get_mesh_by_name(meshes, this.object.filename)
-                        MeshOpts[mesh.name] = this.object.filename   
-                        color_brain(mesh, MeshOpts[mesh.name])
-                    })
-
-                }
                 //var meshgui = gui.addFolder('Mesh');
                 
 
                 
                 
-                gui.open();
+                
                 
              animate();
              
