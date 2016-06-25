@@ -16,6 +16,10 @@
      		  padding: 0;
      		  overflow: hidden !important;  
      		}
+     		
+     		div{
+         		width: 100%;
+     		}
 	
      	</style>   
          
@@ -40,7 +44,7 @@
 
                  var objects = [];
 
-                 var meshes = [];
+                 meshes = [];
 				
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
@@ -55,8 +59,24 @@
                       vmax: 5,
                       key: "freesurfer thickness",
                       key_options: ["freesurfer thickness", "freesurfer curvature", "area", "freesurfer convexity (sulc)", "geodesic depth", "mean curvature", "travel depth"],    
-                      threshold: 2.4
-                  }
+                      threshold: 2.4,
+                      mesh_transparency: 1,
+                      mesh_visible: true,
+                      overlay_transparency: 1
+                  },
+                  "rh_freesurfer_curvature.vtk":{  
+                      filename: "rh_vertices.csv",
+                      colormin: "#0000FF", 
+                      colormax: "#FF0000",
+                      vmin: 2,
+                      vmax: 5,
+                      key: "freesurfer thickness",
+                      key_options: ["freesurfer thickness", "freesurfer curvature", "area", "freesurfer convexity (sulc)", "geodesic depth", "mean curvature", "travel depth"],    
+                      threshold: 2.4,
+                      mesh_transparency: 1,
+                      mesh_visible: true,
+                      overlay_transparency: 1
+                  },
                   
                 };
                 
@@ -70,6 +90,8 @@
                     var vmax = gui.add(tmp, 'vmax');
                     var threshold = gui.add(tmp, 'threshold', 0, 5);
                     var key = gui.add(tmp, "key", tmp.key_options)
+                    var mesh_transparency = gui.add(tmp, "mesh_transparency", 0, 1)
+                    var mesh_visible = gui.add(tmp, "mesh_visible")
                     
                     var changer = function(value){
                         // console.log("this is", this)
@@ -86,28 +108,14 @@
                     vmax.onChange(changer)
                     key.onChange(changer)
                     threshold.onChange(changer)
-                    
+                    mesh_transparency.onChange(changer)
+                    mesh_visible.onChange(changer)
                     gui.open();
 
                     
                 
                 }
 				
-				var get_mesh_by_name = function(meshes, name){
-    				console.log("meshes", meshes)
-    				var N = meshes.length
-    				
-    				for (i=0;i<N;i++){
-        				
-        				var to_match = MeshOpts[meshes[i].name].filename
-        				console.log("finding mesh", meshes[i].name, to_match)
-        				if (meshes[i].name==to_match){
-            				
-            				return meshes[i]
-        				}
-    				}
-    				
-				}
 
                 // Use CSV is a function that will remember csvs by filenames.  This will only
                 // go and get the file if the data for that particular filename has not yet been loaded.
@@ -180,6 +188,10 @@
                     var mesh_options = mesh.anisha_opts
                     var key = mesh_options.key
                     var face_metrics = mesh.face_metrics[key]
+
+                    mesh.material.transparent = true
+                    mesh.material.opacity = mesh_options.mesh_transparency
+                    mesh.visible = mesh_options.mesh_visible
 
                     var colorgrad = d3.scale.linear()
                         .domain([mesh_options.vmin, mesh_options.vmax])//[_.min(face_metrics), _.max(face_metrics)])
