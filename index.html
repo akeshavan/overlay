@@ -11,19 +11,43 @@
  
          <style>
      		html, body {
-     		  background-color:#000;
      		  margin: 0;
      		  padding: 0;
      		  overflow: hidden !important;  
+     		  background-color: #fff;
+              color: #fff;
      		}
      		
      		div{
          		width: 100%;
      		}
-	
+     		
+     		.axis path,
+    .axis line {
+        fill: none;
+        stroke: black;
+        shape-rendering: crispEdges;
+    }
+    .axis text {
+        font-family: sans-serif;
+        font-size: 11px;
+        
+    }
+
+    .left {
+        position:absolute;
+        left:0; top:92px; bottom: 0;
+        width: 178px;
+        padding: 20px;
+    }
+}
+
      	</style>   
          
          <body ng-app="visApp">
+         <div class="left">
+            <div id="colorbar-here"></div>
+         </div>
 
             
 
@@ -32,6 +56,7 @@
              <script src="TrackballControls.js"></script>
              <script src="d3.js"></script>
              <script src="dat.gui.min.js"></script>
+             <script src="colorbar/colorbar.js"></script>
 
              <script>
              //if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
@@ -154,7 +179,12 @@
                     var mesh_visible = meshgui.add(tmp, "mesh_visible")
                     mesh_transparency.onChange(changer)
                     mesh_visible.onChange(changer)
-                    
+                    var foo = {"background_color": "#ffffff"}
+                    var background_color = gui.addColor(foo, "background_color")
+                    var set_background = function(value){
+                        renderer.setClearColor(value, 1);
+                    }
+                    background_color.onChange(set_background)
                     
                     var overlays = Object.keys(tmp.overlays)
                     var overlayfolder = meshgui.addFolder("Overlays")
@@ -184,6 +214,7 @@
                         vmax.onChange(change_decorator(overlay_name))
                         threshold.onChange(change_decorator(overlay_name))
                         visible.onChange(change_decorator(overlay_name))
+                        
                     }
                 
                 }
@@ -281,6 +312,17 @@
                         var colorgrad = d3.scale.linear()
                             .domain([overlay_options.vmin, overlay_options.vmax])//[_.min(face_metrics), _.max(face_metrics)])
                             .range([overlay_options.colormin, overlay_options.colormax]);
+
+                        var colorbar = Colorbar()
+                            .origin([15,60])
+                            .scale(colorgrad)
+                            .orient("vertical")
+                        
+                        var placeholder = "#colorbar-here"
+                        
+                        var colorbarObject = d3.select(placeholder)
+                            .call(colorbar)
+
 
                             mesh.geometry.faces.forEach(function(element, index){
 
@@ -410,6 +452,7 @@
      			 
      	        renderer.setPixelRatio( window.devicePixelRatio );
      	        renderer.setSize( window.innerWidth, window.innerHeight);
+     	        renderer.setClearColor( 0xffffff, 1);
 				container.appendChild( renderer.domElement );
 				}
 				
