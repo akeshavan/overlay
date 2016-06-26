@@ -30,8 +30,8 @@
              <script src="three.min.js"></script>
              <script src="VTKLoader.js"></script>
              <script src="TrackballControls.js"></script>
-             <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.js"></script>
-             <script src="https://rawgit.com/dataarts/dat.gui/master/build/dat.gui.min.js"></script>
+             <script src="d3.js"></script>
+             <script src="dat.gui.min.js"></script>
 
              <script>
              //if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
@@ -58,18 +58,69 @@
 
                   "freesurfer_curvature.vtk":{  
                       filename: "vertices.csv",
-                      colormin: "#0000FF", 
-                      colormax: "#FF0000",
-                      vmin: 2,
-                      vmax: 5,
-                      key: "freesurfer thickness",
-                      key_options: ["freesurfer thickness", "freesurfer curvature", "area", "freesurfer convexity (sulc)", "geodesic depth", "mean curvature", "travel depth"],    
-                      threshold: 2.4,
+                      overlays: {
+                          "freesurfer thickness": {
+                              colormin: "#0000FF", 
+                              colormax: "#FF0000",
+                              vmin: 2,
+                              vmax: 5,
+                              visible: true,
+                              threshold: 2.4
+                          },
+                          "freesurfer curvature": {
+                              colormin: "#0000FF", 
+                              colormax: "#FF0000",
+                              vmin: 2,
+                              vmax: 5,
+                              visible: false,
+                              threshold: 2.4                              
+                          },
+                          "area": {
+                              colormin: "#0000FF", 
+                              colormax: "#FF0000",
+                              vmin: 2,
+                              vmax: 5,
+                              visible: false,
+                              threshold: 2.4                              
+                          },
+                          "freesurfer convexity (sulc)":{
+                              colormin: "#0000FF", 
+                              colormax: "#FF0000",
+                              vmin: 2,
+                              vmax: 5,
+                              visible: false,
+                              threshold: 2.4                              
+                          },
+                          "geodesic depth":{
+                              colormin: "#0000FF", 
+                              colormax: "#FF0000",
+                              vmin: 2,
+                              vmax: 5,
+                              visible: false,
+                              threshold: 2.4                              
+                          },
+                          "mean curvature":{
+                              colormin: "#0000FF", 
+                              colormax: "#FF0000",
+                              vmin: 2,
+                              vmax: 5,
+                              visible: false,
+                              threshold: 2.4                              
+                          },
+                          "travel depth": {
+                              colormin: "#0000FF", 
+                              colormax: "#FF0000",
+                              vmin: 2,
+                              vmax: 5,
+                              visible: false,
+                              threshold: 2.4                              
+                          }   
+                      },    
+                      
                       mesh_transparency: 1,
-                      mesh_visible: true,
-                      overlay_transparency: 1
+                      mesh_visible: true
                   },
-                  "rh_freesurfer_curvature.vtk":{  
+                  /*"rh_freesurfer_curvature.vtk":{  
                       filename: "rh_vertices.csv",
                       colormin: "#0000FF", 
                       colormax: "#FF0000",
@@ -81,7 +132,7 @@
                       mesh_transparency: 1,
                       mesh_visible: true,
                       overlay_transparency: 1
-                  },
+                  },*/
                   
                 };
                 
@@ -89,15 +140,6 @@
                     //var gui = new dat.GUI();
                     var meshgui = gui.addFolder(mesh.name);
                     var tmp = mesh.anisha_opts
-                    var colormin = gui.addColor(tmp, 'colormin');
-                    var colormax = gui.addColor(tmp, 'colormax');
-                    var vmin = gui.add(tmp, 'vmin');
-                    var vmax = gui.add(tmp, 'vmax');
-                    var threshold = gui.add(tmp, 'threshold', 0, 5);
-                    var key = gui.add(tmp, "key", tmp.key_options)
-                    var mesh_transparency = gui.add(tmp, "mesh_transparency", 0, 1)
-                    var mesh_visible = gui.add(tmp, "mesh_visible")
-                    
                     var changer = function(value){
                         // console.log("this is", this)
                         // console.log("mesh is", mesh)
@@ -107,17 +149,42 @@
                         color_brain(mesh)
                     }
                     
-                    colormin.onChange(changer)
-                    colormax.onChange(changer)
-                    vmin.onChange(changer)
-                    vmax.onChange(changer)
-                    key.onChange(changer)
-                    threshold.onChange(changer)
+                    
+                    var mesh_transparency = meshgui.add(tmp, "mesh_transparency", 0, 1)
+                    var mesh_visible = meshgui.add(tmp, "mesh_visible")
                     mesh_transparency.onChange(changer)
                     mesh_visible.onChange(changer)
-                    gui.open();
-
                     
+                    
+                    var overlays = Object.keys(tmp.overlays)
+                    var overlayfolder = meshgui.addFolder("Overlays")
+                    
+                    for (i=0;i<overlays.length;i++){
+                        var overlay_name = overlays[i]
+                        var overlay_options = tmp.overlays[overlay_name]
+                        var overlaygui = overlayfolder.addFolder(overlay_name)
+                        var colormin = overlaygui.addColor(overlay_options, 'colormin');
+                        var colormax = overlaygui.addColor(overlay_options, 'colormax');
+                        var vmin = overlaygui.add(overlay_options, 'vmin');
+                        var vmax = overlaygui.add(overlay_options, 'vmax');
+                        var threshold = overlaygui.add(overlay_options, 'threshold', overlay_options.vmin, overlay_options.vmax);
+                        var visible = overlaygui.add(overlay_options, 'visible');
+                        
+                        var change_decorator = function(overlay_name){
+                            var changer = function(value){
+                                mesh.anisha_opts.overlays[overlay_name] = this.object   
+                                color_brain(mesh)
+                            }
+                            return changer            
+                        }//end change_decorator
+                        
+                        colormin.onChange(change_decorator(overlay_name))
+                        colormax.onChange(change_decorator(overlay_name))
+                        vmin.onChange(change_decorator(overlay_name))
+                        vmax.onChange(change_decorator(overlay_name))
+                        threshold.onChange(change_decorator(overlay_name))
+                        visible.onChange(change_decorator(overlay_name))
+                    }
                 
                 }
 				
@@ -156,7 +223,7 @@
                 var calculateFaceMetrics = function(mesh, callback){
                     var mesh_options = mesh.anisha_opts
                     var csv_filename = mesh_options["filename"]
-                    var keys = mesh_options.key_options;
+                    var keys = Object.keys(mesh_options.overlays);
 
                     if(!mesh.face_metrics){
                         mesh.face_metrics = {}
@@ -191,30 +258,44 @@
                 // Before, the csv was being reloaded each time and the face_metrics was recalculated each time.
 				var color_brain = function(mesh){
                     var mesh_options = mesh.anisha_opts
-                    var key = mesh_options.key
-                    var face_metrics = mesh.face_metrics[key]
+                    //var key = mesh_options.key
+                    
 
                     mesh.material.transparent = true
                     mesh.material.opacity = mesh_options.mesh_transparency
                     mesh.visible = mesh_options.mesh_visible
 
-                    var colorgrad = d3.scale.linear()
-                        .domain([mesh_options.vmin, mesh_options.vmax])//[_.min(face_metrics), _.max(face_metrics)])
-                        .range([mesh_options.colormin, mesh_options.colormax]);
+                    var overlays = Object.keys(mesh_options.overlays)
+                    
+                    for (i=0;i<overlays.length;i++){
+                        
+                        var overlay_name = overlays[i]
+                        var overlay_options = mesh_options.overlays[overlay_name]
+                        
+                        if (overlay_options.visible) {
+                            var face_metrics = mesh.face_metrics[overlay_name]
+                        
+                        var colorgrad = d3.scale.linear()
+                            .domain([overlay_options.vmin, overlay_options.vmax])//[_.min(face_metrics), _.max(face_metrics)])
+                            .range([overlay_options.colormin, overlay_options.colormax]);
 
-                    mesh.geometry.faces.forEach(function(element, index){
+                            mesh.geometry.faces.forEach(function(element, index){
 
-                        if (face_metrics[index] > mesh_options.threshold){
-                            var col = new THREE.Color(colorgrad(face_metrics[index]))
-                            element.color.setRGB(col.r, col.g, col.b)
-                        } else {
-                            // Undo the color setting by setting it back to white.
-                            element.color.setRGB(1, 1, 1)
-                        }
+                                if (face_metrics[index] > overlay_options.threshold){
+                                    var col = new THREE.Color(colorgrad(face_metrics[index]))
+                                    element.color.setRGB(col.r, col.g, col.b)
+                                } else {
+                                    // Undo the color setting by setting it back to white.
+                                    element.color.setRGB(1, 1, 1)
+                                }
 
                     })
-                    mesh.geometry.colorsNeedUpdate = true
-                }
+                            mesh.geometry.colorsNeedUpdate = true
+                        }//end if
+                        
+                        
+                        }//end of for loop
+                };//end color brain
 
    			  	function init(){
      	        console.log(window.innerWidth,window.innerHeight);
