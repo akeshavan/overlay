@@ -167,7 +167,7 @@
                         var colormax = overlaygui.addColor(overlay_options, 'colormax');
                         var vmin = overlaygui.add(overlay_options, 'vmin');
                         var vmax = overlaygui.add(overlay_options, 'vmax');
-                        var threshold = overlaygui.add(overlay_options, 'threshold', overlay_options.vmin, overlay_options.vmax);
+                        var threshold = overlaygui.add(overlay_options, 'threshold', -5, overlay_options.vmax);
                         var visible = overlaygui.add(overlay_options, 'visible');
                         
                         var change_decorator = function(overlay_name){
@@ -266,14 +266,17 @@
                     mesh.visible = mesh_options.mesh_visible
 
                     var overlays = Object.keys(mesh_options.overlays)
+                    var empty_mesh = true
                     
                     for (i=0;i<overlays.length;i++){
                         
                         var overlay_name = overlays[i]
                         var overlay_options = mesh_options.overlays[overlay_name]
                         
+                        
                         if (overlay_options.visible) {
                             var face_metrics = mesh.face_metrics[overlay_name]
+                            empty_mesh = false
                         
                         var colorgrad = d3.scale.linear()
                             .domain([overlay_options.vmin, overlay_options.vmax])//[_.min(face_metrics), _.max(face_metrics)])
@@ -284,17 +287,28 @@
                                 if (face_metrics[index] > overlay_options.threshold){
                                     var col = new THREE.Color(colorgrad(face_metrics[index]))
                                     element.color.setRGB(col.r, col.g, col.b)
-                                } else {
+                                    element.coloredBy = overlay_name
+                                } 
+                                else if(element.coloredBy != overlay_name){
+                                    
+                                    //do nothing since its colored from something else
+                                }
+                                else {
                                     // Undo the color setting by setting it back to white.
                                     element.color.setRGB(1, 1, 1)
                                 }
 
-                    })
+                            });//end forEach
+                            
                             mesh.geometry.colorsNeedUpdate = true
                         }//end if
                         
-                        
                         }//end of for loop
+                    if (empty_mesh){
+                            console.log("no overlays to show")
+                            mesh.geometry.faces.forEach(function(element, index){element.color.setRGB(1, 1, 1)})
+                            mesh.geometry.colorsNeedUpdate = true
+                        }
                 };//end color brain
 
    			  	function init(){
