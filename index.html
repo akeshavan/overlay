@@ -69,6 +69,10 @@
 
                  var objects = [];
 
+                 var our_colors = {
+                    WHITE: new THREE.Color( 0xffffff )
+                 };
+
                  meshes = [];
                  gui = new dat.GUI()
                  var screenshot = { "Capture Image":function(){ window.open(renderer.domElement.toDataURL("image/png", "final")) }};
@@ -90,7 +94,8 @@
                               vmin: 2,
                               vmax: 5,
                               visible: true,
-                              threshold: 2.4
+                              threshold: 2.4,
+                              alias: 'thickness'
                           },
                           "freesurfer curvature": {
                               colormin: "#0000FF", 
@@ -98,7 +103,8 @@
                               vmin: 2,
                               vmax: 5,
                               visible: false,
-                              threshold: 2.4                              
+                              threshold: 2.4,
+                              alias: 'curvature'
                           },
                           "area": {
                               colormin: "#0000FF", 
@@ -106,7 +112,8 @@
                               vmin: 2,
                               vmax: 5,
                               visible: false,
-                              threshold: 2.4                              
+                              threshold: 2.4,
+                              alias: 'area'
                           },
                           "freesurfer convexity (sulc)":{
                               colormin: "#0000FF", 
@@ -114,7 +121,8 @@
                               vmin: 2,
                               vmax: 5,
                               visible: false,
-                              threshold: 2.4                              
+                              threshold: 2.4,
+                              alias: 'convexity'
                           },
                           "geodesic depth":{
                               colormin: "#0000FF", 
@@ -122,7 +130,8 @@
                               vmin: 2,
                               vmax: 5,
                               visible: false,
-                              threshold: 2.4                              
+                              threshold: 2.4,
+                              alias: 'geodesic-depth'
                           },
                           "mean curvature":{
                               colormin: "#0000FF", 
@@ -130,7 +139,8 @@
                               vmin: 2,
                               vmax: 5,
                               visible: false,
-                              threshold: 2.4                              
+                              threshold: 2.4,
+                              alias: 'curvature'
                           },
                           "travel depth": {
                               colormin: "#0000FF", 
@@ -138,7 +148,8 @@
                               vmin: 2,
                               vmax: 5,
                               visible: false,
-                              threshold: 2.4                              
+                              threshold: 2.4,
+                              alias: 'travel-depth'
                           }   
                       },    
                       
@@ -188,7 +199,8 @@
                     
                     var overlays = Object.keys(tmp.overlays)
                     var overlayfolder = meshgui.addFolder("Overlays")
-                    
+                    var placeholder = "#colorbar-here"
+
                     for (i=0;i<overlays.length;i++){
                         var overlay_name = overlays[i]
                         var overlay_options = tmp.overlays[overlay_name]
@@ -214,7 +226,8 @@
                         vmax.onChange(change_decorator(overlay_name))
                         threshold.onChange(change_decorator(overlay_name))
                         visible.onChange(change_decorator(overlay_name))
-                        
+
+                        d3.select(placeholder).append('div').attr('id', overlay_options.alias)
                     }
                 
                 }
@@ -288,75 +301,77 @@
                 // 
                 // Before, the csv was being reloaded each time and the face_metrics was recalculated each time.
 				var color_brain = function(mesh){
-                    var mesh_options = mesh.anisha_opts
-                    //var key = mesh_options.key
-                    
+          var mesh_options = mesh.anisha_opts
+          //var key = mesh_options.key
+          
 
-                    mesh.material.transparent = true
-                    mesh.material.opacity = mesh_options.mesh_transparency
-                    mesh.visible = mesh_options.mesh_visible
+          mesh.material.transparent = true
+          mesh.material.opacity = mesh_options.mesh_transparency
+          mesh.visible = mesh_options.mesh_visible
 
-                    var overlays = Object.keys(mesh_options.overlays)
-                    var empty_mesh = true
-                    
-                    for (i=0;i<overlays.length;i++){
-                        
-                        var overlay_name = overlays[i]
-                        var overlay_options = mesh_options.overlays[overlay_name]
-                        
-                        
-                        if (overlay_options.visible) {
-                            var face_metrics = mesh.face_metrics[overlay_name]
-                            empty_mesh = false
-                        
-                        var colorgrad = d3.scale.linear()
-                            .domain([overlay_options.vmin, overlay_options.vmax])//[_.min(face_metrics), _.max(face_metrics)])
-                            .range([overlay_options.colormin, overlay_options.colormax]);
+          var overlays = Object.keys(mesh_options.overlays)
+          var empty_mesh = true
+          var visible_overlays = []
+          var colorgrads = {}
+          var placeholder = "#colorbar-here"
 
-                        var colorbar = Colorbar()
-                            .origin([15,60])
-                            .scale(colorgrad)
-                            .orient("vertical")
-                        
-                        var placeholder = "#colorbar-here"
-                        
-                        var colorbarObject = d3.select(placeholder)
-                            .call(colorbar)
+          for (i=0;i<overlays.length;i++){
+              
+            var overlay_name = overlays[i]
+            var overlay_options = mesh_options.overlays[overlay_name]
 
+            if (overlay_options.visible) {
+              var face_metrics = mesh.face_metrics[overlay_name]
+              empty_mesh = false
+              visible_overlays.push(overlay_name)
+            
+              var colorgrad = d3.scale.linear()
+                  .domain([overlay_options.vmin, overlay_options.vmax])//[_.min(face_metrics), _.max(face_metrics)])
+                  .range([overlay_options.colormin, overlay_options.colormax]);
 
-                            mesh.geometry.faces.forEach(function(element, index){
+              colorgrads[overlay_name] = colorgrad
 
-                                if (face_metrics[index] > overlay_options.threshold){
-                                    var col = new THREE.Color(colorgrad(face_metrics[index]))
-                                    element.color.setRGB(col.r, col.g, col.b)
-                                    element.coloredBy = overlay_name
-                                } 
-                                else if(element.coloredBy != overlay_name && element.color.r != 1 && element.color.g != 1 && element.color.b != 1){
-                                    if (mesh_options.overlays[element.coloredBy].visible== false) {
-                                        element.color.setRGB(1, 1, 1)
-                                    }
-                                    //do nothing since its colored from something else
-                                }
-                                else {
-                                    // Undo the color setting by setting it back to white.
-                                    element.color.setRGB(1, 1, 1)
-                                }
+              var colorbar = Colorbar()
+                  .origin([15,60])
+                  .scale(colorgrad)
+                  .orient("vertical")
 
-                            });//end forEach
-                            
-                            mesh.geometry.colorsNeedUpdate = true
-                        }//end if
+              d3.select(placeholder).select('#' + overlay_options.alias).call(colorbar)
+
+            }
+              
+          }//end of for loop
+
+          if (empty_mesh){
+            console.log("no overlays to show")
+            mesh.geometry.faces.forEach(function(element, index){element.color.set(our_colors.WHITE)})
+          } else {
+            mesh.geometry.faces.forEach(function(element, index){
+
+              var face_color = our_colors.WHITE
+
+              var visible_overlay = visible_overlays.find(function(overlay_name){
+                var overlay_options = mesh_options.overlays[overlay_name]
+                var face_metrics = mesh.face_metrics[overlay_name]
+
+                return face_metrics[index] > overlay_options.threshold;
+              });
+
+              if(visible_overlay){
+                face_color = new THREE.Color(colorgrads[visible_overlay](mesh.face_metrics[visible_overlay][index]))
+              }
+
+              if(!element.color.equals(face_color)){
+                element.color.set(face_color)
+              }
+            });//end forEach
+          }
+          
+          mesh.geometry.colorsNeedUpdate = true
+
+          console.log("finished coloring brain")
                         
-                        }//end of for loop
-                    if (empty_mesh){
-                            console.log("no overlays to show")
-                            mesh.geometry.faces.forEach(function(element, index){element.color.setRGB(1, 1, 1)})
-                            mesh.geometry.colorsNeedUpdate = true
-                        }
-                        
-                        console.log("finished coloring brain")
-                        
-                };//end color brain
+        };//end color brain
 
    			  	function init(){
      	        console.log(window.innerWidth,window.innerHeight);
